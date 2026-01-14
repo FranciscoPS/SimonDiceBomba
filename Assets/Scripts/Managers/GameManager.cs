@@ -17,6 +17,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float timePenalty = 3f;
     [SerializeField] private float maxTimeDecrement = 0.3f;
     [SerializeField] private float dangerThreshold = 3f;
+    [SerializeField] private float roundStartBonus = 2f;
     
     [Header("Progression")]
     [SerializeField] private int baseSequenceLength = 3;
@@ -108,6 +109,10 @@ public class GameManager : MonoBehaviour
     public float GetTimePenalty()
     {
         return timePenalty;
+    }
+    public void ApplyRoundStartBonus()
+    {
+        AddBombTime(roundStartBonus);
     }
     public float GetMaxBombTime()
     {

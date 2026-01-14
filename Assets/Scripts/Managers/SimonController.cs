@@ -31,6 +31,7 @@ public class SimonController : MonoBehaviour
     public void StartNewRound()
     {
         if (GameManager.Instance == null || GameManager.Instance.IsGameOver()) return;
+        GameManager.Instance.ApplyRoundStartBonus();
         playerInput.Clear();
         GenerateSequence();
         SelectModifier();
@@ -54,12 +55,27 @@ public class SimonController : MonoBehaviour
         targetColors.Clear();
         if (currentModifier == Modifier.TwoColorsOnly)
         {
-            List<int> availableColors = new List<int> { 0, 1, 2, 3 };
-            int color1 = availableColors[UnityEngine.Random.Range(0, availableColors.Count)];
-            availableColors.Remove(color1);
-            int color2 = availableColors[UnityEngine.Random.Range(0, availableColors.Count)];
-            targetColors.Add(color1);
-            targetColors.Add(color2);
+            List<int> colorsInSequence = new List<int>();
+            foreach (int color in currentSequence)
+            {
+                if (!colorsInSequence.Contains(color))
+                {
+                    colorsInSequence.Add(color);
+                }
+            }
+            
+            if (colorsInSequence.Count >= 2)
+            {
+                int color1 = colorsInSequence[UnityEngine.Random.Range(0, colorsInSequence.Count)];
+                colorsInSequence.Remove(color1);
+                int color2 = colorsInSequence[UnityEngine.Random.Range(0, colorsInSequence.Count)];
+                targetColors.Add(color1);
+                targetColors.Add(color2);
+            }
+            else
+            {
+                currentModifier = (Modifier)UnityEngine.Random.Range(0, 5);
+            }
         }
     }
     private IEnumerator PlaySequenceRoutine()
@@ -152,7 +168,7 @@ public class SimonController : MonoBehaviour
             case Modifier.NoRepeats:
                 for (int i = 0; i < currentSequence.Count; i++)
                 {
-                    if (i == 0 || currentSequence[i] != currentSequence[i - 1])
+                    if (!expected.Contains(currentSequence[i]))
                     {
                         expected.Add(currentSequence[i]);
                     }

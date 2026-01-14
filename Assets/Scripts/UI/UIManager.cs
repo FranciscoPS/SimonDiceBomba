@@ -185,31 +185,18 @@ public class UIManager : MonoBehaviour
             return;
         }
         GameObject item = Instantiate(sequenceItemPrefab, sequenceContainer);
-        Modifier currentMod = SimonController.Instance != null ? SimonController.Instance.GetCurrentModifier() : Modifier.Reverse;
-        bool shouldPress = ShouldPressThisButton(index, colorIndex, currentMod);
+        
         Image image = item.GetComponent<Image>();
         if (image != null)
         {
-            Color buttonColor = GetButtonColor(colorIndex);
-            if (!shouldPress)
-            {
-                buttonColor.a = 0.3f;
-            }
-            image.color = buttonColor;
+            image.color = GetButtonColor(colorIndex);
         }
         TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
         if (text != null)
         {
             text.text = (index + 1).ToString();
-            if (!shouldPress)
-            {
-                text.color = Color.gray;
-            }
-            else
-            {
-                text.color = Color.black;
-                text.fontStyle = FontStyles.Bold;
-            }
+            text.color = Color.black;
+            text.fontStyle = FontStyles.Bold;
         }
         sequenceItems.Add(item);
     }
@@ -240,7 +227,14 @@ public class UIManager : MonoBehaviour
             case Modifier.NoRepeats:
                 if (index == 0) return true;
                 if (index >= sequence.Count) return true;
-                return sequence[index] != sequence[index - 1];
+                for (int i = 0; i < index; i++)
+                {
+                    if (sequence[i] == colorIndex)
+                    {
+                        return false;
+                    }
+                }
+                return true;
                 
             case Modifier.Double:
                 return true;
