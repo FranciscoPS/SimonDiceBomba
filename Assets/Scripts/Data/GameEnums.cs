@@ -5,7 +5,6 @@ public enum ButtonColor
     Red = 2,
     Yellow = 3
 }
-
 public enum Modifier
 {
     Reverse,

@@ -1,5 +1,4 @@
 using System;
-
 [Serializable]
 public class ScoreEntry
 {
@@ -7,7 +6,6 @@ public class ScoreEntry
     public int score;
     public int level;
     public string date;
-
     public ScoreEntry(string name, int score, int level)
     {
         this.playerName = name;
