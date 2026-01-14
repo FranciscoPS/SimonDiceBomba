@@ -142,18 +142,19 @@ public class UIManager : MonoBehaviour
         switch (modifier)
         {
             case Modifier.Reverse:
-                modifierStr = "REVERSO";
+                modifierStr = "REVERSO\n(Presiona la secuencia AL REVÉS)";
                 break;
             case Modifier.EvenPositions:
-                modifierStr = "SOLO PARES";
+                modifierStr = "SOLO PARES\n(Solo posiciones 2, 4, 6... Los opacos)";
                 break;
             case Modifier.ColorOnly:
                 string colorName = GetColorName(targetColor);
-                modifierStr = $"SOLO {colorName.ToUpper()}";
+                modifierStr = $"SOLO {colorName.ToUpper()}\n(Solo presiona los {colorName}s opacos)";
                 break;
         }
 
         modifierText.text = modifierStr;
+        Debug.Log($"UIManager: Mostrando modificador: {modifierStr}");
     }
 
     private void DisplaySequence(List<int> sequence)
@@ -167,16 +168,31 @@ public class UIManager : MonoBehaviour
 
         if (sequenceContainer == null || sequenceItemPrefab == null) return;
 
+        // Obtener el modificador actual para resaltar los botones correctos
+        Modifier currentMod = SimonController.Instance != null ? SimonController.Instance.GetCurrentModifier() : Modifier.Reverse;
+        ButtonColor targetColor = SimonController.Instance != null ? SimonController.Instance.GetTargetColor() : ButtonColor.Green;
+
         // Crear nuevos items
         for (int i = 0; i < sequence.Count; i++)
         {
             GameObject item = Instantiate(sequenceItemPrefab, sequenceContainer);
             
+            // Determinar si este botón debe ser presionado según el modificador
+            bool shouldPress = ShouldPressThisButton(i, sequence[i], currentMod, targetColor);
+            
             // Configurar color
             Image image = item.GetComponent<Image>();
             if (image != null)
             {
-                image.color = GetButtonColor(sequence[i]);
+                Color buttonColor = GetButtonColor(sequence[i]);
+                
+                // Si NO debe presionarse, hacerlo semi-transparente
+                if (!shouldPress)
+                {
+                    buttonColor.a = 0.3f;
+                }
+                
+                image.color = buttonColor;
             }
 
             // Configurar número
@@ -184,9 +200,42 @@ public class UIManager : MonoBehaviour
             if (text != null)
             {
                 text.text = (i + 1).ToString();
+                
+                // Si NO debe presionarse, texto gris
+                if (!shouldPress)
+                {
+                    text.color = Color.gray;
+                }
+                else
+                {
+                    text.color = Color.black;
+                    text.fontStyle = FontStyles.Bold;
+                }
             }
 
             sequenceItems.Add(item);
+        }
+    }
+
+    // Determina si un botón específico debe ser presionado según el modificador
+    private bool ShouldPressThisButton(int index, int colorIndex, Modifier modifier, ButtonColor targetColor)
+    {
+        switch (modifier)
+        {
+            case Modifier.Reverse:
+                // Todos deben presionarse, solo cambia el orden
+                return true;
+                
+            case Modifier.EvenPositions:
+                // Solo posiciones pares (índice impar: 1, 3, 5... = posiciones 2, 4, 6...)
+                return (index + 1) % 2 == 0;
+                
+            case Modifier.ColorOnly:
+                // Solo el color específico
+                return colorIndex == (int)targetColor;
+                
+            default:
+                return true;
         }
     }
 

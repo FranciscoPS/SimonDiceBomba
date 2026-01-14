@@ -12,6 +12,8 @@ public class SimonButton : MonoBehaviour
 
     private Image image;
     private Button button;
+    private float lastClickTime = 0f;
+    private const float CLICK_COOLDOWN = 0.15f; // 150ms entre clicks
 
     private void Awake()
     {
@@ -61,7 +63,15 @@ public class SimonButton : MonoBehaviour
     // Método PÚBLICO para llamar desde Inspector o código
     public void OnClick()
     {
-        Debug.Log($"SimonButton {colorIndex}: Click detectado!");
+        // Prevenir doble-clicks accidentales
+        if (Time.time - lastClickTime < CLICK_COOLDOWN)
+        {
+            Debug.Log($"SimonButton {colorIndex}: Click ignorado (muy rápido, {Time.time - lastClickTime:F3}s desde último click)");
+            return;
+        }
+        lastClickTime = Time.time;
+
+        Debug.Log($"[{Time.time:F2}s] SimonButton {colorIndex} ({GetColorName()}): Click detectado!");
         if (SimonController.Instance != null)
         {
             Debug.Log($"SimonButton {colorIndex}: Enviando a SimonController");
@@ -70,6 +80,18 @@ public class SimonButton : MonoBehaviour
         else
         {
             Debug.LogError("SimonButton: SimonController.Instance es NULL!");
+        }
+    }
+
+    private string GetColorName()
+    {
+        switch (colorIndex)
+        {
+            case 0: return "VERDE";
+            case 1: return "AZUL";
+            case 2: return "ROJO";
+            case 3: return "AMARILLO";
+            default: return "DESCONOCIDO";
         }
     }
 

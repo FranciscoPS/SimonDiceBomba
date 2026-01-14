@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Game Settings")]
     [SerializeField] private int maxLives = 3;
-    [SerializeField] private float initialBombTime = 40f;
+    [SerializeField] private float initialBombTime = 15f;
     [SerializeField] private float bombDrainRate = 1f;
 
     // Estado del juego
@@ -110,17 +110,20 @@ public class GameManager : MonoBehaviour
 
     public float GetTimeReward()
     {
-        return Mathf.Max(4f, 12f - currentLevel * 0.4f);
+        // Recompensa: empieza en 8s y baja hasta mínimo 3s
+        return Mathf.Max(3f, 8f - currentLevel * 0.3f);
     }
 
     public float GetTimePenalty()
     {
-        return 6f + currentLevel * 0.5f;
+        // Penalización: empieza en 4s y sube
+        return 4f + currentLevel * 0.3f;
     }
 
     public float GetMaxBombTime()
     {
-        return Mathf.Max(30f, 50f - currentLevel * 0.5f);
+        // Techo máximo: empieza en 20s y baja hasta 15s
+        return Mathf.Max(15f, 20f - currentLevel * 0.3f);
     }
 
     public void SetPaused(bool paused)

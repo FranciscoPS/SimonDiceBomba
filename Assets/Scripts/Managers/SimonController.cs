@@ -85,17 +85,47 @@ public class SimonController : MonoBehaviour
     {
         currentModifier = (Modifier)UnityEngine.Random.Range(0, 3);
 
-        // Si es ColorOnly, elegir un color target aleatorio
+        // Si es ColorOnly, elegir un color que EXISTA en la secuencia
         if (currentModifier == Modifier.ColorOnly)
         {
-            targetColor = (ButtonColor)UnityEngine.Random.Range(0, 4);
+            // Contar cuántas veces aparece cada color en la secuencia
+            int[] colorCounts = new int[4];
+            foreach (int colorIndex in currentSequence)
+            {
+                colorCounts[colorIndex]++;
+            }
+
+            // Buscar colores que existen en la secuencia
+            List<int> availableColors = new List<int>();
+            for (int i = 0; i < 4; i++)
+            {
+                if (colorCounts[i] > 0)
+                {
+                    availableColors.Add(i);
+                }
+            }
+
+            // Si solo hay un color, cambiar a REVERSO para evitar modificador trivial
+            if (availableColors.Count == 1)
+            {
+                currentModifier = Modifier.Reverse;
+                Debug.Log("SimonController: Solo un color en secuencia, cambiando a REVERSO");
+            }
+            else
+            {
+                // Elegir un color random de los disponibles
+                targetColor = (ButtonColor)availableColors[UnityEngine.Random.Range(0, availableColors.Count)];
+                Debug.Log($"SimonController: ColorOnly seleccionado. Target: {targetColor}. Apariciones: {colorCounts[(int)targetColor]}");
+            }
         }
+
+        Debug.Log($"SimonController: Modificador seleccionado: {currentModifier}");
     }
 
     private IEnumerator PlaySequenceRoutine()
     {
         isPlayerTurn = false;
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.5f); // Espera inicial reducida
 
         float delay = GetButtonDelay();
 
@@ -105,10 +135,10 @@ public class SimonController : MonoBehaviour
             AudioManager.Instance?.PlayButtonSound(buttonIndex);
             yield return new WaitForSeconds(delay);
             buttons[buttonIndex].Unhighlight();
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(0.1f); // Pausa entre botones más corta
         }
 
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.3f); // Pausa antes del turno reducida
         StartPlayerTurn();
     }
 
@@ -122,7 +152,7 @@ public class SimonController : MonoBehaviour
 
     public void OnButtonPressed(int buttonIndex)
     {
-        Debug.Log($"SimonController: Botón {buttonIndex} presionado. IsPlayerTurn: {isPlayerTurn}");
+        Debug.Log($"[{Time.time:F2}s] SimonController: Botón {buttonIndex} presionado. IsPlayerTurn: {isPlayerTurn}");
         
         if (!isPlayerTurn)
         {
@@ -131,7 +161,7 @@ public class SimonController : MonoBehaviour
         }
 
         playerInput.Add(buttonIndex);
-        Debug.Log($"SimonController: Input agregado. Total inputs: {playerInput.Count}");
+        Debug.Log($"[{Time.time:F2}s] SimonController: Input agregado. Secuencia actual del jugador: [{string.Join(", ", playerInput)}]");
 
         // Feedback visual y sonoro
         StartCoroutine(ButtonFeedback(buttonIndex));
@@ -157,7 +187,13 @@ public class SimonController : MonoBehaviour
         isPlayerTurn = false;
         List<int> expectedInput = GetExpectedInput();
 
+        Debug.Log($"=== VALIDACIÓN ===");
+        Debug.Log($"Input del jugador: [{string.Join(", ", playerInput)}]");
+        Debug.Log($"Input esperado: [{string.Join(", ", expectedInput)}]");
+
         bool isCorrect = ListsMatch(playerInput, expectedInput);
+
+        Debug.Log($"Resultado: {(isCorrect ? "CORRECTO" : "INCORRECTO")}");
 
         if (isCorrect)
         {
@@ -179,7 +215,9 @@ public class SimonController : MonoBehaviour
         {
             case Modifier.Reverse:
                 expected = new List<int>(currentSequence);
+                Debug.Log($"REVERSO - Secuencia ORIGINAL (lo que se mostró): [{string.Join(", ", currentSequence)}]");
                 expected.Reverse();
+                Debug.Log($"REVERSO - Secuencia ESPERADA (lo que debes presionar): [{string.Join(", ", expected)}]");
                 break;
 
             case Modifier.EvenPositions:
@@ -190,6 +228,8 @@ public class SimonController : MonoBehaviour
                         expected.Add(currentSequence[i]);
                     }
                 }
+                Debug.Log($"SOLO PARES - Secuencia original: [{string.Join(", ", currentSequence)}]");
+                Debug.Log($"SOLO PARES - Posiciones esperadas: [{string.Join(", ", expected)}]");
                 break;
 
             case Modifier.ColorOnly:
@@ -200,7 +240,14 @@ public class SimonController : MonoBehaviour
                         expected.Add(color);
                     }
                 }
+                Debug.Log($"SOLO COLOR {targetColor} - Secuencia original: [{string.Join(", ", currentSequence)}]");
+                Debug.Log($"SOLO COLOR - Colores esperados: [{string.Join(", ", expected)}]");
                 break;
+        }
+
+        if (expected.Count == 0)
+        {
+            Debug.LogError($"ERROR: Expected input está vacío! Modificador: {currentModifier}");
         }
 
         return expected;
@@ -208,13 +255,22 @@ public class SimonController : MonoBehaviour
 
     private bool ListsMatch(List<int> list1, List<int> list2)
     {
-        if (list1.Count != list2.Count) return false;
+        if (list1.Count != list2.Count)
+        {
+            Debug.Log($"ListsMatch: Tamaños diferentes. List1: {list1.Count}, List2: {list2.Count}");
+            return false;
+        }
 
         for (int i = 0; i < list1.Count; i++)
         {
-            if (list1[i] != list2[i]) return false;
+            if (list1[i] != list2[i])
+            {
+                Debug.Log($"ListsMatch: Diferencia en índice {i}. List1[{i}]={list1[i]}, List2[{i}]={list2[i]}");
+                return false;
+            }
         }
 
+        Debug.Log("ListsMatch: Listas coinciden perfectamente");
         return true;
     }
 
@@ -273,12 +329,14 @@ public class SimonController : MonoBehaviour
     private float GetButtonDelay()
     {
         int level = GameManager.Instance != null ? GameManager.Instance.GetCurrentLevel() : 1;
-        return Mathf.Max(0.3f, 1.0f - level * 0.03f);
+        // Empieza en 0.5s y baja hasta 0.2s
+        return Mathf.Max(0.2f, 0.5f - level * 0.02f);
     }
 
     private float GetRoundTimeLimit()
     {
-        return 10f + GetSequenceLength() * 1.5f;
+        // Tiempo fijo de 10 segundos para responder
+        return 10f;
     }
 
     // Getters públicos
