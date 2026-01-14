@@ -6,7 +6,6 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
     [Header("Top Bar")]
-    [SerializeField] private TextMeshProUGUI bombTimerText;
     [SerializeField] private TextMeshProUGUI livesText;
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private TextMeshProUGUI levelText;
@@ -18,9 +17,10 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Transform sequenceContainer;
     [SerializeField] private GameObject sequenceItemPrefab;
 
-    [Header("Round Timer")]
-    [SerializeField] private TextMeshProUGUI roundTimerText;
-    [SerializeField] private Slider roundTimerSlider;
+    [Header("Bomb Timer (Slider)")]
+    [SerializeField] private TextMeshProUGUI bombTimerText;
+    [SerializeField] private Slider bombTimerSlider;
+    [SerializeField] private float maxBombTime = 20f; // Para el slider
 
     [Header("Danger Overlay")]
     [SerializeField] private CanvasGroup dangerOverlay;
@@ -30,6 +30,7 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
+        Debug.Log("UIManager: Start llamado");
         SubscribeToEvents();
         UpdateAllUI();
     }
@@ -41,19 +42,31 @@ public class UIManager : MonoBehaviour
 
     private void SubscribeToEvents()
     {
+        Debug.Log($"UIManager: Suscribiendo eventos. GameManager null: {GameManager.Instance == null}, SimonController null: {SimonController.Instance == null}");
+        
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnBombTimerChanged += UpdateBombTimer;
-            GameManager.Instance.OnLivesChanged += UpdateLives;
             GameManager.Instance.OnScoreChanged += UpdateScore;
             GameManager.Instance.OnLevelStart += UpdateLevel;
+            Debug.Log("UIManager: Suscrito a eventos de GameManager");
+        }
+        else
+        {
+            Debug.LogError("UIManager: GameManager.Instance es NULL!");
         }
 
         if (SimonController.Instance != null)
         {
             SimonController.Instance.OnSequenceGenerated += DisplaySequence;
             SimonController.Instance.OnModifierSelected += DisplayModifier;
-            SimonController.Instance.OnRoundTimerUpdate += UpdateRoundTimer;
+            SimonController.Instance.OnSequenceItemAdded += AddSequenceItem;
+            SimonController.Instance.OnSequenceHidden += HideSequence;
+            Debug.Log("UIManager: Suscrito a eventos de SimonController (incluyendo OnSequenceItemAdded)");
+        }
+        else
+        {
+            Debug.LogError("UIManager: SimonController.Instance es NULL!");
         }
     }
 
@@ -62,7 +75,6 @@ public class UIManager : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnBombTimerChanged -= UpdateBombTimer;
-            GameManager.Instance.OnLivesChanged -= UpdateLives;
             GameManager.Instance.OnScoreChanged -= UpdateScore;
             GameManager.Instance.OnLevelStart -= UpdateLevel;
         }
@@ -71,7 +83,8 @@ public class UIManager : MonoBehaviour
         {
             SimonController.Instance.OnSequenceGenerated -= DisplaySequence;
             SimonController.Instance.OnModifierSelected -= DisplayModifier;
-            SimonController.Instance.OnRoundTimerUpdate -= UpdateRoundTimer;
+            SimonController.Instance.OnSequenceItemAdded -= AddSequenceItem;
+            SimonController.Instance.OnSequenceHidden -= HideSequence;
         }
     }
 
@@ -80,7 +93,6 @@ public class UIManager : MonoBehaviour
         if (GameManager.Instance != null)
         {
             UpdateBombTimer(GameManager.Instance.GetBombTimer());
-            UpdateLives(GameManager.Instance.GetCurrentLives());
             UpdateScore(GameManager.Instance.GetCurrentScore());
             UpdateLevel(GameManager.Instance.GetCurrentLevel());
         }
@@ -93,12 +105,18 @@ public class UIManager : MonoBehaviour
             bombTimerText.text = $"BOMBA: {time:F1}s";
             
             // Cambiar color según tiempo restante
-            if (time < 10f)
+            if (time < 5f)
                 bombTimerText.color = Color.red;
-            else if (time < 20f)
-                bombTimerText.color = Color.yellow;
+            else if (time < 10f)
+                bombTimerText.color = new Color(1f, 0.5f, 0f); // Naranja
             else
                 bombTimerText.color = Color.white;
+        }
+
+        if (bombTimerSlider != null)
+        {
+            bombTimerSlider.maxValue = maxBombTime;
+            bombTimerSlider.value = time;
         }
 
         // Activar/desactivar overlay de peligro
@@ -107,14 +125,6 @@ public class UIManager : MonoBehaviour
         {
             isDangerActive = shouldShowDanger;
             UpdateDangerOverlay();
-        }
-    }
-
-    private void UpdateLives(int lives)
-    {
-        if (livesText != null)
-        {
-            livesText.text = $"VIDAS: {lives}";
         }
     }
 
@@ -136,29 +146,28 @@ public class UIManager : MonoBehaviour
 
     private void DisplayModifier(Modifier modifier, ButtonColor targetColor)
     {
+        Debug.Log($"DisplayModifier llamado: {modifier}");
+        
         if (modifierText == null) return;
 
         string modifierStr = "";
         switch (modifier)
         {
             case Modifier.Reverse:
-                modifierStr = "REVERSO\n(Presiona la secuencia AL REVÉS)";
+                modifierStr = "REVERSO";
                 break;
             case Modifier.EvenPositions:
-                modifierStr = "SOLO PARES\n(Solo posiciones 2, 4, 6... Los opacos)";
-                break;
-            case Modifier.ColorOnly:
-                string colorName = GetColorName(targetColor);
-                modifierStr = $"SOLO {colorName.ToUpper()}\n(Solo presiona los {colorName}s opacos)";
+                modifierStr = "SOLO PARES";
                 break;
         }
 
         modifierText.text = modifierStr;
-        Debug.Log($"UIManager: Mostrando modificador: {modifierStr}");
     }
 
     private void DisplaySequence(List<int> sequence)
     {
+        Debug.Log($"DisplaySequence llamado con {sequence.Count} elementos");
+        
         // Limpiar items anteriores
         foreach (GameObject item in sequenceItems)
         {
@@ -166,91 +175,7 @@ public class UIManager : MonoBehaviour
         }
         sequenceItems.Clear();
 
-        if (sequenceContainer == null || sequenceItemPrefab == null) return;
-
-        // Obtener el modificador actual para resaltar los botones correctos
-        Modifier currentMod = SimonController.Instance != null ? SimonController.Instance.GetCurrentModifier() : Modifier.Reverse;
-        ButtonColor targetColor = SimonController.Instance != null ? SimonController.Instance.GetTargetColor() : ButtonColor.Green;
-
-        // Crear nuevos items
-        for (int i = 0; i < sequence.Count; i++)
-        {
-            GameObject item = Instantiate(sequenceItemPrefab, sequenceContainer);
-            
-            // Determinar si este botón debe ser presionado según el modificador
-            bool shouldPress = ShouldPressThisButton(i, sequence[i], currentMod, targetColor);
-            
-            // Configurar color
-            Image image = item.GetComponent<Image>();
-            if (image != null)
-            {
-                Color buttonColor = GetButtonColor(sequence[i]);
-                
-                // Si NO debe presionarse, hacerlo semi-transparente
-                if (!shouldPress)
-                {
-                    buttonColor.a = 0.3f;
-                }
-                
-                image.color = buttonColor;
-            }
-
-            // Configurar número
-            TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
-            if (text != null)
-            {
-                text.text = (i + 1).ToString();
-                
-                // Si NO debe presionarse, texto gris
-                if (!shouldPress)
-                {
-                    text.color = Color.gray;
-                }
-                else
-                {
-                    text.color = Color.black;
-                    text.fontStyle = FontStyles.Bold;
-                }
-            }
-
-            sequenceItems.Add(item);
-        }
-    }
-
-    // Determina si un botón específico debe ser presionado según el modificador
-    private bool ShouldPressThisButton(int index, int colorIndex, Modifier modifier, ButtonColor targetColor)
-    {
-        switch (modifier)
-        {
-            case Modifier.Reverse:
-                // Todos deben presionarse, solo cambia el orden
-                return true;
-                
-            case Modifier.EvenPositions:
-                // Solo posiciones pares (índice impar: 1, 3, 5... = posiciones 2, 4, 6...)
-                return (index + 1) % 2 == 0;
-                
-            case Modifier.ColorOnly:
-                // Solo el color específico
-                return colorIndex == (int)targetColor;
-                
-            default:
-                return true;
-        }
-    }
-
-    private void UpdateRoundTimer(float current, float max)
-    {
-        if (roundTimerText != null)
-        {
-            roundTimerText.text = $"TIEMPO: {current:F1}s";
-        }
-
-        if (roundTimerSlider != null)
-        {
-            roundTimerSlider.maxValue = max;
-            roundTimerSlider.value = current;
-        }
+        // No crear nada aún, se crearán progresivamente
     }
 
     private void UpdateDangerOverlay()
@@ -276,6 +201,86 @@ public class UIManager : MonoBehaviour
             float t = Mathf.PingPong(Time.time * 2f, 1f);
             dangerOverlay.alpha = Mathf.Lerp(0.1f, 0.4f, t);
             yield return null;
+        }
+    }
+
+    private void AddSequenceItem(int index, int colorIndex)
+    {
+        Debug.Log($"AddSequenceItem - index: {index}, color: {colorIndex}, container null: {sequenceContainer == null}, prefab null: {sequenceItemPrefab == null}");
+        
+        if (sequenceContainer == null || sequenceItemPrefab == null)
+        {
+            Debug.LogError("CRITICAL: sequenceContainer o sequenceItemPrefab es NULL!");
+            return;
+        }
+
+        GameObject item = Instantiate(sequenceItemPrefab, sequenceContainer);
+        Debug.Log($"Item creado exitosamente");
+        
+        // Obtener el modificador actual
+        Modifier currentMod = SimonController.Instance != null ? SimonController.Instance.GetCurrentModifier() : Modifier.Reverse;
+        
+        bool shouldPress = ShouldPressThisButton(index, colorIndex, currentMod);
+        
+        // Configurar color
+        Image image = item.GetComponent<Image>();
+        if (image != null)
+        {
+            Color buttonColor = GetButtonColor(colorIndex);
+            
+            if (!shouldPress)
+            {
+                buttonColor.a = 0.3f;
+            }
+            
+            image.color = buttonColor;
+        }
+
+        // Configurar número
+        TextMeshProUGUI text = item.GetComponentInChildren<TextMeshProUGUI>();
+        if (text != null)
+        {
+            text.text = (index + 1).ToString();
+            
+            if (!shouldPress)
+            {
+                text.color = Color.gray;
+            }
+            else
+            {
+                text.color = Color.black;
+                text.fontStyle = FontStyles.Bold;
+            }
+        }
+
+        sequenceItems.Add(item);
+    }
+
+    private void HideSequence()
+    {
+        Debug.Log($"HideSequence - Items: {sequenceItems.Count}");
+        foreach (GameObject item in sequenceItems)
+        {
+            Destroy(item);
+        }
+        sequenceItems.Clear();
+    }
+
+    // Determina si un botón específico debe ser presionado según el modificador
+    private bool ShouldPressThisButton(int index, int colorIndex, Modifier modifier)
+    {
+        switch (modifier)
+        {
+            case Modifier.Reverse:
+                // Todos deben presionarse, solo cambia el orden
+                return true;
+                
+            case Modifier.EvenPositions:
+                // Solo posiciones pares (índice impar: 1, 3, 5... = posiciones 2, 4, 6...)
+                return (index + 1) % 2 == 0;
+                
+            default:
+                return true;
         }
     }
 

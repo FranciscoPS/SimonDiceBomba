@@ -7,12 +7,10 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     [Header("Game Settings")]
-    [SerializeField] private int maxLives = 3;
     [SerializeField] private float initialBombTime = 15f;
     [SerializeField] private float bombDrainRate = 1f;
 
     // Estado del juego
-    private int currentLives;
     private int currentScore;
     private int currentLevel;
     private float bombTimer;
@@ -20,7 +18,6 @@ public class GameManager : MonoBehaviour
     private bool isPaused;
 
     // Eventos
-    public event Action<int> OnLivesChanged;
     public event Action<int> OnScoreChanged;
     public event Action<float> OnBombTimerChanged;
     public event Action<int> OnLevelStart;
@@ -40,14 +37,12 @@ public class GameManager : MonoBehaviour
 
     public void StartNewGame()
     {
-        currentLives = maxLives;
         currentScore = 0;
         currentLevel = 1;
         bombTimer = initialBombTime;
         isGameOver = false;
         isPaused = false;
 
-        OnLivesChanged?.Invoke(currentLives);
         OnScoreChanged?.Invoke(currentScore);
         OnBombTimerChanged?.Invoke(bombTimer);
         OnLevelStart?.Invoke(currentLevel);
@@ -57,8 +52,9 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver || isPaused) return;
 
-        // Drain constante de la bomba
-        if (SceneManager.GetActiveScene().buildIndex == 1) // Solo en GameScene
+        // Drain constante de la bomba (en cualquier escena excepto menú principal)
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (sceneName == "GameScene" || SceneManager.GetActiveScene().buildIndex == 1)
         {
             bombTimer -= bombDrainRate * Time.deltaTime;
             OnBombTimerChanged?.Invoke(bombTimer);
@@ -75,17 +71,6 @@ public class GameManager : MonoBehaviour
     {
         currentScore += points;
         OnScoreChanged?.Invoke(currentScore);
-    }
-
-    public void LoseLife()
-    {
-        currentLives--;
-        OnLivesChanged?.Invoke(currentLives);
-
-        if (currentLives <= 0)
-        {
-            TriggerGameOver();
-        }
     }
 
     public void NextLevel()
@@ -116,8 +101,8 @@ public class GameManager : MonoBehaviour
 
     public float GetTimePenalty()
     {
-        // Penalización: empieza en 4s y sube
-        return 4f + currentLevel * 0.3f;
+        // Penalización fija: -3 segundos
+        return 3f;
     }
 
     public float GetMaxBombTime()
@@ -168,11 +153,10 @@ public class GameManager : MonoBehaviour
     }
 
     // Getters
-    public int GetCurrentLives() => currentLives;
     public int GetCurrentScore() => currentScore;
     public int GetCurrentLevel() => currentLevel;
     public float GetBombTimer() => bombTimer;
     public bool IsGameOver() => isGameOver;
     public bool IsPaused() => isPaused;
-    public bool IsBombInDanger() => bombTimer < 15f;
+    public bool IsBombInDanger() => bombTimer < 3f;
 }

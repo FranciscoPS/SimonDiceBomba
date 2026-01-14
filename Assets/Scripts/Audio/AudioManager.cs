@@ -90,11 +90,11 @@ public class AudioManager : MonoBehaviour
 
     private void CheckAlarm(float bombTimer)
     {
-        if (bombTimer < 15f && !isAlarmPlaying)
+        if (bombTimer < 3f && !isAlarmPlaying)
         {
             StartAlarm();
         }
-        else if (bombTimer >= 15f && isAlarmPlaying)
+        else if (bombTimer >= 3f && isAlarmPlaying)
         {
             StopAlarm();
         }
