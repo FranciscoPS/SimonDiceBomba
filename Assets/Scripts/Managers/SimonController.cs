@@ -7,18 +7,16 @@ public class SimonController : MonoBehaviour
 {
     public static SimonController Instance { get; private set; }
     [Header("Buttons")]
-    [SerializeField] private SimonButton[] buttons; 
-    [Header("Settings")]
-    [SerializeField] private int baseSequenceLength = 3;
+    [SerializeField] private SimonButton[] buttons;
     private List<int> currentSequence = new List<int>();
     private List<int> playerInput = new List<int>();
     private Modifier currentModifier;
-    private ButtonColor targetColor; 
+    private List<int> targetColors = new List<int>();
     private bool isPlayerTurn = false;
     public event Action<List<int>> OnSequenceGenerated;
-    public event Action<Modifier, ButtonColor> OnModifierSelected;
+    public event Action<Modifier, List<int>> OnModifierSelected;
     public event Action OnPlayerTurnStart;
-    public event Action<int, int> OnSequenceItemAdded; 
+    public event Action<int, int> OnSequenceItemAdded;
     public event Action OnSequenceHidden;
     private void Awake()
     {
@@ -37,12 +35,12 @@ public class SimonController : MonoBehaviour
         GenerateSequence();
         SelectModifier();
         OnSequenceGenerated?.Invoke(currentSequence);
-        OnModifierSelected?.Invoke(currentModifier, targetColor);
+        OnModifierSelected?.Invoke(currentModifier, targetColors);
         StartCoroutine(PlaySequenceRoutine());
     }
     private void GenerateSequence()
     {
-        int length = GetSequenceLength();
+        int length = GameManager.Instance.GetSequenceLength();
         currentSequence.Clear();
         for (int i = 0; i < length; i++)
         {
@@ -51,13 +49,24 @@ public class SimonController : MonoBehaviour
     }
     private void SelectModifier()
     {
-        currentModifier = (Modifier)UnityEngine.Random.Range(0, 2);
+        currentModifier = (Modifier)UnityEngine.Random.Range(0, 6);
+        
+        targetColors.Clear();
+        if (currentModifier == Modifier.TwoColorsOnly)
+        {
+            List<int> availableColors = new List<int> { 0, 1, 2, 3 };
+            int color1 = availableColors[UnityEngine.Random.Range(0, availableColors.Count)];
+            availableColors.Remove(color1);
+            int color2 = availableColors[UnityEngine.Random.Range(0, availableColors.Count)];
+            targetColors.Add(color1);
+            targetColors.Add(color2);
+        }
     }
     private IEnumerator PlaySequenceRoutine()
     {
         isPlayerTurn = false;
-        yield return new WaitForSeconds(0.5f); 
-        float delay = GetButtonDelay();
+        yield return new WaitForSeconds(GameManager.Instance.GetSequenceDisplayTime());
+        float delay = GameManager.Instance.GetButtonDelay();
         for (int i = 0; i < currentSequence.Count; i++)
         {
             int buttonIndex = currentSequence[i];
@@ -66,11 +75,11 @@ public class SimonController : MonoBehaviour
             OnSequenceItemAdded?.Invoke(i, buttonIndex);
             yield return new WaitForSeconds(delay);
             buttons[buttonIndex].Unhighlight();
-            yield return new WaitForSeconds(0.1f); 
+            yield return new WaitForSeconds(0.1f);
         }
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(GameManager.Instance.GetPatternVisibilityTime());
         OnSequenceHidden?.Invoke();
-        yield return new WaitForSeconds(0.3f); 
+        yield return new WaitForSeconds(0.3f);
         StartPlayerTurn();
     }
     private void StartPlayerTurn()
@@ -119,12 +128,51 @@ public class SimonController : MonoBehaviour
                 expected = new List<int>(currentSequence);
                 expected.Reverse();
                 break;
+            
             case Modifier.EvenPositions:
                 for (int i = 0; i < currentSequence.Count; i++)
                 {
                     if ((i + 1) % 2 == 0)
                     {
                         expected.Add(currentSequence[i]);
+                    }
+                }
+                break;
+            
+            case Modifier.OddPositions:
+                for (int i = 0; i < currentSequence.Count; i++)
+                {
+                    if ((i + 1) % 2 == 1)
+                    {
+                        expected.Add(currentSequence[i]);
+                    }
+                }
+                break;
+            
+            case Modifier.NoRepeats:
+                for (int i = 0; i < currentSequence.Count; i++)
+                {
+                    if (i == 0 || currentSequence[i] != currentSequence[i - 1])
+                    {
+                        expected.Add(currentSequence[i]);
+                    }
+                }
+                break;
+            
+            case Modifier.Double:
+                foreach (int color in currentSequence)
+                {
+                    expected.Add(color);
+                    expected.Add(color);
+                }
+                break;
+            
+            case Modifier.TwoColorsOnly:
+                foreach (int color in currentSequence)
+                {
+                    if (targetColors.Contains(color))
+                    {
+                        expected.Add(color);
                     }
                 }
                 break;
@@ -145,30 +193,20 @@ public class SimonController : MonoBehaviour
         AudioManager.Instance?.PlayCorrectSound();
         float timeReward = GameManager.Instance.GetTimeReward();
         GameManager.Instance.AddBombTime(timeReward);
-        int points = 100 * GameManager.Instance.GetCurrentLevel();
+        int points = GameManager.Instance.GetPointsPerLevel();
         GameManager.Instance.AddScore(points);
         GameManager.Instance.NextLevel();
-        Invoke(nameof(StartNewRound), 1.5f);
+        Invoke(nameof(StartNewRound), GameManager.Instance.GetCorrectInputDelay());
     }
     private void OnIncorrectInput()
     {
         AudioManager.Instance?.PlayIncorrectSound();
         float timePenalty = GameManager.Instance.GetTimePenalty();
         GameManager.Instance.RemoveBombTime(timePenalty);
-        Invoke(nameof(StartNewRound), 2f);
-    }
-    private int GetSequenceLength()
-    {
-        int level = GameManager.Instance != null ? GameManager.Instance.GetCurrentLevel() : 1;
-        return Mathf.Min(10, baseSequenceLength + level / 3);
-    }
-    private float GetButtonDelay()
-    {
-        int level = GameManager.Instance != null ? GameManager.Instance.GetCurrentLevel() : 1;
-        return Mathf.Max(0.2f, 0.5f - level * 0.02f);
+        Invoke(nameof(StartNewRound), GameManager.Instance.GetIncorrectInputDelay());
     }
     public List<int> GetCurrentSequence() => currentSequence;
     public Modifier GetCurrentModifier() => currentModifier;
-    public ButtonColor GetTargetColor() => targetColor;
+    public List<int> GetTargetColors() => targetColors;
     public bool IsPlayerTurn() => isPlayerTurn;
 }

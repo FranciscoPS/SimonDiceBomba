@@ -7,6 +7,33 @@ public class GameManager : MonoBehaviour
     [Header("Game Settings")]
     [SerializeField] private float initialBombTime = 15f;
     [SerializeField] private float bombDrainRate = 1f;
+    [SerializeField] private float maxBombTime = 20f;
+    [SerializeField] private float minBombTime = 15f;
+    
+    [Header("Time Balance")]
+    [SerializeField] private float baseTimeReward = 8f;
+    [SerializeField] private float minTimeReward = 3f;
+    [SerializeField] private float timeRewardDecrement = 0.3f;
+    [SerializeField] private float timePenalty = 3f;
+    [SerializeField] private float maxTimeDecrement = 0.3f;
+    [SerializeField] private float dangerThreshold = 3f;
+    
+    [Header("Progression")]
+    [SerializeField] private int baseSequenceLength = 3;
+    [SerializeField] private int maxSequenceLength = 10;
+    [SerializeField] private int levelPerSequenceIncrease = 3;
+    [SerializeField] private float baseButtonDelay = 0.5f;
+    [SerializeField] private float minButtonDelay = 0.2f;
+    [SerializeField] private float buttonDelayDecrement = 0.02f;
+    
+    [Header("Scoring")]
+    [SerializeField] private int pointsPerLevel = 100;
+    
+    [Header("Round Delays")]
+    [SerializeField] private float correctInputDelay = 1.5f;
+    [SerializeField] private float incorrectInputDelay = 2f;
+    [SerializeField] private float sequenceDisplayTime = 0.5f;
+    [SerializeField] private float patternVisibilityTime = 0.5f;
     private int currentScore;
     private int currentLevel;
     private float bombTimer;
@@ -76,16 +103,32 @@ public class GameManager : MonoBehaviour
     }
     public float GetTimeReward()
     {
-        return Mathf.Max(3f, 8f - currentLevel * 0.3f);
+        return Mathf.Max(minTimeReward, baseTimeReward - currentLevel * timeRewardDecrement);
     }
     public float GetTimePenalty()
     {
-        return 3f;
+        return timePenalty;
     }
     public float GetMaxBombTime()
     {
-        return Mathf.Max(15f, 20f - currentLevel * 0.3f);
+        return Mathf.Max(minBombTime, maxBombTime - currentLevel * maxTimeDecrement);
     }
+    public int GetSequenceLength()
+    {
+        return Mathf.Min(maxSequenceLength, baseSequenceLength + currentLevel / levelPerSequenceIncrease);
+    }
+    public float GetButtonDelay()
+    {
+        return Mathf.Max(minButtonDelay, baseButtonDelay - currentLevel * buttonDelayDecrement);
+    }
+    public int GetPointsPerLevel()
+    {
+        return pointsPerLevel * currentLevel;
+    }
+    public float GetCorrectInputDelay() => correctInputDelay;
+    public float GetIncorrectInputDelay() => incorrectInputDelay;
+    public float GetSequenceDisplayTime() => sequenceDisplayTime;
+    public float GetPatternVisibilityTime() => patternVisibilityTime;
     public void SetPaused(bool paused)
     {
         isPaused = paused;
@@ -122,5 +165,6 @@ public class GameManager : MonoBehaviour
     public float GetBombTimer() => bombTimer;
     public bool IsGameOver() => isGameOver;
     public bool IsPaused() => isPaused;
-    public bool IsBombInDanger() => bombTimer < 3f;
+    public bool IsBombInDanger() => bombTimer < dangerThreshold;
+    public float GetDangerThreshold() => dangerThreshold;
 }

@@ -9,5 +9,8 @@ public enum Modifier
 {
     Reverse,
     EvenPositions,
-    ColorOnly
+    OddPositions,
+    NoRepeats,
+    Double,
+    TwoColorsOnly
 }

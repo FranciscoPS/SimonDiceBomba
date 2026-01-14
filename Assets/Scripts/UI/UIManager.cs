@@ -115,7 +115,7 @@ public class UIManager : MonoBehaviour
             levelText.text = $"NIVEL {level}";
         }
     }
-    private void DisplayModifier(Modifier modifier, ButtonColor targetColor)
+    private void DisplayModifier(Modifier modifier, List<int> targetColors)
     {
         if (modifierText == null) return;
         string modifierStr = "";
@@ -126,6 +126,23 @@ public class UIManager : MonoBehaviour
                 break;
             case Modifier.EvenPositions:
                 modifierStr = "SOLO PARES";
+                break;
+            case Modifier.OddPositions:
+                modifierStr = "SOLO IMPARES";
+                break;
+            case Modifier.NoRepeats:
+                modifierStr = "SIN REPETIDOS";
+                break;
+            case Modifier.Double:
+                modifierStr = "DOBLE";
+                break;
+            case Modifier.TwoColorsOnly:
+                if (targetColors != null && targetColors.Count == 2)
+                {
+                    string color1 = GetColorName(targetColors[0]);
+                    string color2 = GetColorName(targetColors[1]);
+                    modifierStr = $"SOLO {color1} Y {color2}";
+                }
                 break;
         }
         modifierText.text = modifierStr;
@@ -206,12 +223,31 @@ public class UIManager : MonoBehaviour
     }
     private bool ShouldPressThisButton(int index, int colorIndex, Modifier modifier)
     {
+        List<int> sequence = SimonController.Instance != null ? SimonController.Instance.GetCurrentSequence() : new List<int>();
+        List<int> targetColors = SimonController.Instance != null ? SimonController.Instance.GetTargetColors() : new List<int>();
+        
         switch (modifier)
         {
             case Modifier.Reverse:
                 return true;
+                
             case Modifier.EvenPositions:
                 return (index + 1) % 2 == 0;
+                
+            case Modifier.OddPositions:
+                return (index + 1) % 2 == 1;
+                
+            case Modifier.NoRepeats:
+                if (index == 0) return true;
+                if (index >= sequence.Count) return true;
+                return sequence[index] != sequence[index - 1];
+                
+            case Modifier.Double:
+                return true;
+                
+            case Modifier.TwoColorsOnly:
+                return targetColors.Contains(colorIndex);
+                
             default:
                 return true;
         }
@@ -227,14 +263,14 @@ public class UIManager : MonoBehaviour
             default: return Color.white;
         }
     }
-    private string GetColorName(ButtonColor color)
+    private string GetColorName(int colorIndex)
     {
-        switch (color)
+        switch (colorIndex)
         {
-            case ButtonColor.Green: return "Verde";
-            case ButtonColor.Blue: return "Azul";
-            case ButtonColor.Red: return "Rojo";
-            case ButtonColor.Yellow: return "Amarillo";
+            case 0: return "VERDE";
+            case 1: return "AZUL";
+            case 2: return "ROJO";
+            case 3: return "AMARILLO";
             default: return "";
         }
     }
