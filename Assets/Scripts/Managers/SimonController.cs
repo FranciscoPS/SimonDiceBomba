@@ -122,9 +122,16 @@ public class SimonController : MonoBehaviour
 
     public void OnButtonPressed(int buttonIndex)
     {
-        if (!isPlayerTurn) return;
+        Debug.Log($"SimonController: Botón {buttonIndex} presionado. IsPlayerTurn: {isPlayerTurn}");
+        
+        if (!isPlayerTurn)
+        {
+            Debug.LogWarning("SimonController: No es turno del jugador, click ignorado");
+            return;
+        }
 
         playerInput.Add(buttonIndex);
+        Debug.Log($"SimonController: Input agregado. Total inputs: {playerInput.Count}");
 
         // Feedback visual y sonoro
         StartCoroutine(ButtonFeedback(buttonIndex));

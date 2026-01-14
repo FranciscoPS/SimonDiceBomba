@@ -90,7 +90,7 @@ public class UIManager : MonoBehaviour
     {
         if (bombTimerText != null)
         {
-            bombTimerText.text = $"💣 {time:F1}s";
+            bombTimerText.text = $"BOMBA: {time:F1}s";
             
             // Cambiar color según tiempo restante
             if (time < 10f)
@@ -114,12 +114,7 @@ public class UIManager : MonoBehaviour
     {
         if (livesText != null)
         {
-            string hearts = "";
-            for (int i = 0; i < lives; i++)
-            {
-                hearts += "❤️";
-            }
-            livesText.text = hearts;
+            livesText.text = $"VIDAS: {lives}";
         }
     }
 
@@ -127,7 +122,7 @@ public class UIManager : MonoBehaviour
     {
         if (scoreText != null)
         {
-            scoreText.text = $"🏆 {score:N0}";
+            scoreText.text = $"SCORE: {score:N0}";
         }
     }
 
@@ -147,14 +142,14 @@ public class UIManager : MonoBehaviour
         switch (modifier)
         {
             case Modifier.Reverse:
-                modifierStr = "🔄 REVERSO";
+                modifierStr = "REVERSO";
                 break;
             case Modifier.EvenPositions:
-                modifierStr = "⚡ SOLO PARES";
+                modifierStr = "SOLO PARES";
                 break;
             case Modifier.ColorOnly:
                 string colorName = GetColorName(targetColor);
-                modifierStr = $"🎨 SOLO {colorName.ToUpper()}";
+                modifierStr = $"SOLO {colorName.ToUpper()}";
                 break;
         }
 
@@ -199,7 +194,7 @@ public class UIManager : MonoBehaviour
     {
         if (roundTimerText != null)
         {
-            roundTimerText.text = $"⏱️ {current:F1}s";
+            roundTimerText.text = $"TIEMPO: {current:F1}s";
         }
 
         if (roundTimerSlider != null)
