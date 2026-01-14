@@ -354,9 +354,9 @@ MonoBehaviour:
   m_HandleRect: {fileID: 635831822}
   m_Direction: 0
   m_MinValue: 0
-  m_MaxValue: 40
+  m_MaxValue: 20
   m_WholeNumbers: 0
-  m_Value: 40
+  m_Value: 20
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -2314,7 +2314,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'TIEMPO: 15.0s'
+  m_text: 'TIEMPO: 20.0s'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2722,8 +2722,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 049ce0398509b6143b1703e2ebd2bcac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  initialBombTime: 40
+  initialBombTime: 20
   bombDrainRate: 1
+  maxBombTime: 40
+  minBombTime: 15
+  baseTimeReward: 8
+  minTimeReward: 3
+  timeRewardDecrement: 0.3
+  timePenalty: 3
+  maxTimeDecrement: 0.3
+  dangerThreshold: 3
+  roundStartBonus: 2
+  baseSequenceLength: 3
+  maxSequenceLength: 10
+  levelPerSequenceIncrease: 3
+  baseButtonDelay: 0.5
+  minButtonDelay: 0.2
+  buttonDelayDecrement: 0.02
+  pointsPerLevel: 100
+  correctInputDelay: 1.5
+  incorrectInputDelay: 2
+  sequenceDisplayTime: 0.5
+  patternVisibilityTime: 1
 --- !u!4 &1908464034
 Transform:
   m_ObjectHideFlags: 0
@@ -2773,7 +2793,6 @@ MonoBehaviour:
   - {fileID: 156330537}
   - {fileID: 1453215456}
   - {fileID: 579543844}
-  baseSequenceLength: 3
 --- !u!4 &1992366805
 Transform:
   m_ObjectHideFlags: 0
