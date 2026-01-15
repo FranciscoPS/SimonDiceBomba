@@ -5,7 +5,7 @@ public class LeaderboardManager : MonoBehaviour
 {
     public static LeaderboardManager Instance { get; private set; }
     private const string LEADERBOARD_KEY = "SimonDiceBomba_Leaderboard";
-    private const int MAX_SCORES = 10;
+    private const int MAX_SCORES = 20;
     private List<ScoreEntry> scores = new List<ScoreEntry>();
     private void Awake()
     {
