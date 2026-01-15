@@ -143,6 +143,12 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
+        
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.ForceStopAlarm();
+        }
+        
         OnGameOver?.Invoke();
         if (LeaderboardManager.Instance != null)
         {
@@ -153,7 +159,7 @@ public class GameManager : MonoBehaviour
     private void LoadGameOverScene()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene(2); 
+        SceneManager.LoadScene(0);
     }
     public void LoadMainMenu()
     {

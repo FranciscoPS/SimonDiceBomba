@@ -98,4 +98,8 @@ public class AudioManager : MonoBehaviour
             isAlarmPlaying = false;
         }
     }
+    public void ForceStopAlarm()
+    {
+        StopAlarm();
+    }
 }

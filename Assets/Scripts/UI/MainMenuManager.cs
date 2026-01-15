@@ -16,6 +16,12 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private GameObject leaderboardEntryPrefab;
     private void Start()
     {
+        if (LeaderboardManager.Instance == null)
+        {
+            GameObject lbManager = new GameObject("LeaderboardManager");
+            lbManager.AddComponent<LeaderboardManager>();
+        }
+        
         if (playButton != null)
         {
             playButton.onClick.AddListener(PlayGame);
@@ -58,28 +64,38 @@ public class MainMenuManager : MonoBehaviour
     }
     private void PopulateLeaderboard()
     {
-        if (LeaderboardManager.Instance == null || leaderboardContainer == null) return;
+        if (leaderboardContainer == null || leaderboardEntryPrefab == null) return;
+        
         foreach (Transform child in leaderboardContainer)
         {
             Destroy(child.gameObject);
         }
-        List<ScoreEntry> scores = LeaderboardManager.Instance.GetTopScores();
-        for (int i = 0; i < scores.Count; i++)
+        
+        List<ScoreEntry> scores = LeaderboardManager.Instance != null 
+            ? LeaderboardManager.Instance.GetTopScores() 
+            : new List<ScoreEntry>();
+        
+        if (scores.Count > 0)
         {
-            GameObject entry = Instantiate(leaderboardEntryPrefab, leaderboardContainer);
-            TextMeshProUGUI text = entry.GetComponent<TextMeshProUGUI>();
-            if (text != null)
+            for (int i = 0; i < scores.Count; i++)
             {
-                text.text = $"{i + 1}. {scores[i].playerName} - {scores[i].score:N0} pts (Nivel {scores[i].level})";
+                GameObject entry = Instantiate(leaderboardEntryPrefab, leaderboardContainer);
+                TextMeshProUGUI text = entry.GetComponent<TextMeshProUGUI>();
+                if (text != null)
+                {
+                    text.text = $"{i + 1}. {scores[i].playerName} - {scores[i].score:N0} pts (Nivel {scores[i].level})";
+                }
             }
         }
-        if (scores.Count == 0)
+        else
         {
             GameObject entry = Instantiate(leaderboardEntryPrefab, leaderboardContainer);
             TextMeshProUGUI text = entry.GetComponent<TextMeshProUGUI>();
             if (text != null)
             {
                 text.text = "No hay puntuaciones todavía. ¡Sé el primero!";
+                text.color = Color.gray;
+                text.alignment = TextAlignmentOptions.Center;
             }
         }
     }
